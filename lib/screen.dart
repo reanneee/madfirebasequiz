@@ -1,136 +1,131 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class Screen extends StatefulWidget {
-  Screen({super.key});
+class StudentsScreen extends StatefulWidget {
+   StudentsScreen({super.key});
 
   @override
-  State<Screen> createState() => _ScreenState();
+  State<StudentsScreen> createState() => _StudentsScreenState();
 }
 
-class _ScreenState extends State<Screen> {
-  String collectionPath = "studentsInfo";
+class _StudentsScreenState extends State<StudentsScreen> {
+final String collectionPath='students';
 
-  var namectrl = TextEditingController();
+final fnCtrl=TextEditingController();
+
+final lnCtrl=TextEditingController();
+
+final degreeCtrl=TextEditingController();
+final searchCtrl=TextEditingController();
+ var studentList=[];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        actions: [
-          IconButton(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (_) {
-                  return AlertDialog(
-                    content: Column(
-                      children: [TextField(controller: namectrl)],
-                    ),
-                    actions: [
-                      ElevatedButton(
-                        onPressed: () {
-                          FirebaseFirestore.instance
-                              .collection(collectionPath)
-                              .where('name', isEqualTo: namectrl.text)
-                              .get()
-                              .then((querySnapshot) {
-                                if (querySnapshot.docs.isNotEmpty) {
-                                  var doc = querySnapshot.docs.first;
-                                  var counter = doc['quantity'] + 1 ?? 0;
-
-                                  doc.reference.update({'quantity': counter});
-                                } else {
-                                  FirebaseFirestore.instance
-                                      .collection(collectionPath)
-                                      .add({
-                                        'name': namectrl.text,
-                                        'quantity': 1,
-                                      });
-                                }
-                                setState(() {});
-                                Navigator.pop(context);
-                              });
-                        },
-                        child: Text('add'),
+        title: Text('Firebaseeeeee'),
+        backgroundColor: Colors.amber,
+        actions: [IconButton(onPressed: (){
+          showDialog(context: context, builder: (_){
+            return AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                
+                  TextField(
+                    controller: fnCtrl,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      label: Text('First Name')
+                    ),  
+                  ),
+                  SizedBox(height: 8,),
+                  TextField(
+                    controller: lnCtrl,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(), label: Text('Last Name'),
+                    ),  
+                  ),
+                      SizedBox(height: 8,),
+                  TextField(
+                    controller: degreeCtrl,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(), label: Text('Degree')
+                    ),  
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: (){
+                  Navigator.of(context).pop();
+                }, child: Text('Cancel')),
+                ElevatedButton(onPressed: doAdd, child: Text('Add'))
+              ],
+            );
+          });
+        }, icon: Icon(Icons.add))],
+      ),
+      body: Column(
+        children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),suffixIcon: Icon(Icons.search)
                       ),
-                    ],
-                  );
-                },
-              );
-            },
-            icon: Icon(Icons.add),
+                      
+                      onChanged: (value) {
+                 searchCtrl.text=value;
+                setState(() {
+                  
+                });
+                      },
+                    ),
+            ),
+          Expanded(
+            child: FutureBuilder(future:searchCtrl.text!=''? FirebaseFirestore.instance.collection(collectionPath).where('fn',isEqualTo: searchCtrl.text).get():FirebaseFirestore.instance.collection(collectionPath).get(), builder: (context,snapshot){
+              if(snapshot.connectionState==ConnectionState.waiting){
+               return Center(child: CircularProgressIndicator());
+              }
+              if(snapshot.data==null){
+                return Text('No records');
+              }
+              var documents=snapshot.data!.docs;
+              return ListView.builder(
+                itemCount: documents.length,
+                itemBuilder: (_,index){
+                return Dismissible(
+                  key: UniqueKey(),
+                  onDismissed: (direction) {
+                    FirebaseFirestore.instance.collection(collectionPath).doc(documents[index].id).delete();
+                    setState(() {
+                      
+                    });
+                  },
+                  child: Card(
+                    child: ListTile(
+                      title: Text('${documents[index]['fn']} ${documents[index]['ln']}'),
+                      subtitle: Text('${documents[index]['degree']}'),
+                    ),
+                  ),
+                );
+              });
+            }),
           ),
         ],
       ),
-      body: FutureBuilder(
-        future: FirebaseFirestore.instance.collection(collectionPath).get(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.data == null) {
-            return Text('No data');
-          }
-          var document = snapshot.data!.docs;
-          return ListView.builder(
-            itemCount: document.length,
-            itemBuilder: (_, index) {
-              return Dismissible(
-                key: UniqueKey(),
-                onDismissed: (direction) {
-                  FirebaseFirestore.instance
-                      .collection(collectionPath)
-                      .doc(document[index].id)
-                      .delete();
-                  setState(() {});
-                },
-                child: Card(
-                  child: ListTile(
-                    title: Text(document[index]['name']),
-
-                    leading: CircleAvatar(
-                      radius: 15,
-                      child: Text('${document[index]['quantity']}'),
-                    ),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) {
-                          namectrl.text = document[index]['name'];
-                          return AlertDialog(
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [TextField(controller: namectrl)],
-                            ),
-                            actions: [
-                              ElevatedButton(
-                                onPressed: () {
-                                  FirebaseFirestore.instance
-                                      .collection(collectionPath)
-                                      .doc(document[index].id)
-                                      .update({
-                                        'name': namectrl.text,
-                                        'quantity': document[index]['quantity'],
-                                      });
-
-                                  setState(() {});
-                                  Navigator.pop(context);
-                                },
-                                child: Text('Update'),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
     );
+  }
+
+  void doAdd() {
+FirebaseFirestore.instance.collection(collectionPath).add({
+  'fn':fnCtrl.text,
+'ln':lnCtrl.text,'degree':degreeCtrl.text,
+});
+
+setState(() {
+  
+});
+Navigator.of(context).pop();
   }
 }
