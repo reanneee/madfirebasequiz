@@ -9,7 +9,7 @@ class StudentsScreen extends StatefulWidget {
 }
 
 class _StudentsScreenState extends State<StudentsScreen> {
-final String collectionPath='students';
+final String collectionPath='/students/A7aTKfOEtsfLhsGOPw7n/contacts';
 
 final fnCtrl=TextEditingController();
 
@@ -83,7 +83,7 @@ final searchCtrl=TextEditingController();
                     ),
             ),
           Expanded(
-            child: FutureBuilder(future:searchCtrl.text!=''? FirebaseFirestore.instance.collection(collectionPath).where('fn',isEqualTo: searchCtrl.text).get():FirebaseFirestore.instance.collection(collectionPath).get(), builder: (context,snapshot){
+            child: StreamBuilder(stream:searchCtrl.text!=''? FirebaseFirestore.instance.collection(collectionPath).where('fn',isEqualTo: searchCtrl.text).snapshots():FirebaseFirestore.instance.collection(collectionPath).snapshots(), builder: (context,snapshot){
               if(snapshot.connectionState==ConnectionState.waiting){
                return Center(child: CircularProgressIndicator());
               }
@@ -104,8 +104,8 @@ final searchCtrl=TextEditingController();
                   },
                   child: Card(
                     child: ListTile(
-                      title: Text('${documents[index]['fn']} ${documents[index]['ln']}'),
-                      subtitle: Text('${documents[index]['degree']}'),
+                      title: Text('${documents[index]['pnum']}'),
+                      // subtitle: Text('${documents[index]['degree']}'),
                     ),
                   ),
                 );
